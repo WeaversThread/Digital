@@ -46,6 +46,9 @@ public final class GlassIcons {
         tool("media-skip-forward", "F M3.75 5 L10 10 L3.75 15 Z M10.25 5 L16.5 10 L10.25 15 Z");
         tool("media-playback-stop", "F M5.5 5.5 H14.5 V14.5 H5.5 Z");
         tool("measurement-graph", "M2.75 13.5 H5.75 V6.5 H10 V13.5 H13.25 V6.5 H17.25");
+        ICONS.put("media-playback-toggle", new ToggleIcon(ICONS.get("media-playback-start"), ICONS.get("media-playback-stop")));
+        ICONS.put("media-playback-toggle-micro", new ToggleIcon(ICONS.get("media-playback-start-2"),
+                new LineIcon(TOOL, "M5.5 5.5 H14.5 V14.5 H5.5 Z", null)));
         ICONS.put("testPassed", new LineIcon(16, "M3.25 8.25 L6.5 11.5 L12.75 4.75", Glass.GREEN));
         ICONS.put("testFailed", new LineIcon(16, "M4.5 4.5 L11.5 11.5 M11.5 4.5 L4.5 11.5", Glass.RED));
         ICONS.put("dialog-error", new LineIcon(28, "O 14 14 11 M14 8.5 V15 D 14 19 1.2", Glass.RED));
@@ -91,6 +94,41 @@ public final class GlassIcons {
                 return Glass.PRIMARY;
         }
         return Glass.SECONDARY;
+    }
+
+    /**
+     * Shows one icon at rest and another while its button is the indicator of an active state,
+     * e.g. play while stopped and stop while running.
+     */
+    private static final class ToggleIcon implements Icon {
+        private final Icon rest;
+        private final Icon active;
+
+        private ToggleIcon(Icon rest, Icon active) {
+            this.rest = rest;
+            this.active = active;
+        }
+
+        private Icon current(Component c) {
+            if (c instanceof JComponent && Boolean.TRUE.equals(((JComponent) c).getClientProperty(GlassButtonUI.ACTIVE)))
+                return active;
+            return rest;
+        }
+
+        @Override
+        public void paintIcon(Component c, Graphics g, int x, int y) {
+            current(c).paintIcon(c, g, x, y);
+        }
+
+        @Override
+        public int getIconWidth() {
+            return rest.getIconWidth();
+        }
+
+        @Override
+        public int getIconHeight() {
+            return rest.getIconHeight();
+        }
     }
 
     private static final class Part {

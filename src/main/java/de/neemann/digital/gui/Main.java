@@ -171,6 +171,10 @@ public final class Main extends JFrame implements ClosingWindowListener.ConfirmS
         setIconImages(IconCreator.createImages("icon32.png", "icon64.png", "icon128.png"));
 
         windowPosManager = new WindowPosManager(this);
+        windowPosManager.setSimulationWindowClosed(() -> {
+            if (model != null)
+                stoppedState.enter();
+        });
 
         keepPrefMainFile = builder.keepPrefMainFile;
 
@@ -467,9 +471,15 @@ public final class Main extends JFrame implements ClosingWindowListener.ConfirmS
         if (Settings.getInstance().get(Keys.SETTINGS_DEFAULT_TREESELECT))
             SwingUtilities.invokeLater(treeCheckBox::doClick);
 
-        toolBar.add(viewHelp.createJButtonNoText());
-        toolBar.add(zoomIn.createJButtonNoText());
-        toolBar.add(zoomOut.createJButtonNoText());
+        if (GlassLaf.isActive()) {
+            // zoom is done with the trackpad or mouse wheel, new and help live in the File menu
+            JMenu file = menuBar.getMenu(0);
+            file.insert(viewHelp.createJMenuItem(), 2);
+        } else {
+            toolBar.add(viewHelp.createJButtonNoText());
+            toolBar.add(zoomIn.createJButtonNoText());
+            toolBar.add(zoomOut.createJButtonNoText());
+        }
         toolBar.add(maximize.createJButtonNoText());
 
         JMenu scaleMenu = new JMenu(Lang.get("menu_scale"));
@@ -494,8 +504,10 @@ public final class Main extends JFrame implements ClosingWindowListener.ConfirmS
         view.add(presentationMode);
         view.addSeparator();
         view.add(tutorial.createJMenuItem());
-        view.addSeparator();
-        view.add(viewHelp.createJMenuItem());
+        if (!GlassLaf.isActive()) {
+            view.addSeparator();
+            view.add(viewHelp.createJMenuItem());
+        }
     }
 
     /**
@@ -725,7 +737,8 @@ public final class Main extends JFrame implements ClosingWindowListener.ConfirmS
         file.add(saveAs.createJMenuItem());
         file.add(export);
 
-        toolBar.add(newFile.createJButtonNoText());
+        if (!GlassLaf.isActive())
+            toolBar.add(newFile.createJButtonNoText());
         toolBar.add(open.createJButtonNoText());
         toolBar.add(save.createJButtonNoText());
 
@@ -1233,11 +1246,37 @@ public final class Main extends JFrame implements ClosingWindowListener.ConfirmS
         run.add(runTests.createJMenuItem());
         run.add(runAllTests.createJMenuItem());
 
-        toolBar.add(runModelState.setIndicator(runModelAction.createJButtonNoText()));
-        toolBar.add(runToBreakAction.createJButtonNoText());
-        toolBar.add(stoppedStateAction.createJButtonNoText());
-        toolBar.addSeparator();
-        toolBar.add(runModelMicroState.setIndicator(runModelMicroAction.createJButtonNoText()));
+        if (GlassLaf.isActive()) {
+            // like a player: the first push starts, the next one stops; the icon shows what a push does
+            ToolTipAction runToggle = new ToolTipAction(Lang.get("menu_run"), IconCreator.create("media-playback-toggle.png")) {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    if (stateManager.isActive(runModelState))
+                        stoppedStateAction.actionPerformed(e);
+                    else
+                        runModelAction.actionPerformed(e);
+                }
+            }.setToolTip(Lang.get("menu_run_tt"));
+            ToolTipAction microToggle = new ToolTipAction(Lang.get("menu_micro"), IconCreator.create("media-playback-toggle-micro.png")) {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    if (stateManager.isActive(runModelMicroState))
+                        stoppedStateAction.actionPerformed(e);
+                    else
+                        runModelMicroAction.actionPerformed(e);
+                }
+            }.setToolTip(Lang.get("menu_micro_tt"));
+            toolBar.add(runModelState.setIndicator(runToggle.createJButtonNoText()));
+            toolBar.add(runToBreakAction.createJButtonNoText());
+            toolBar.addSeparator();
+            toolBar.add(runModelMicroState.setIndicator(microToggle.createJButtonNoText()));
+        } else {
+            toolBar.add(runModelState.setIndicator(runModelAction.createJButtonNoText()));
+            toolBar.add(runToBreakAction.createJButtonNoText());
+            toolBar.add(stoppedStateAction.createJButtonNoText());
+            toolBar.addSeparator();
+            toolBar.add(runModelMicroState.setIndicator(runModelMicroAction.createJButtonNoText()));
+        }
         toolBar.add(doMicroStep.createJButtonNoText());
         toolBar.add(runToBreakMicroAction.createJButtonNoText());
         toolBar.addSeparator();

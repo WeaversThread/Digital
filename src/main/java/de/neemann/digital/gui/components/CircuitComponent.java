@@ -1,3 +1,4 @@
+// CHECKSTYLE.OFF: FileLength
 /*
  * Copyright (c) 2016 Helmut Neemann
  * Use of this source code is governed by the GPL v3 license
@@ -71,6 +72,7 @@ public class CircuitComponent extends JComponent implements ChangedListener, Lib
     private static final ArrayList<Key> ATTR_LIST = new ArrayList<>();
 
     private static final double MAX_SCALE = 50;
+    private static final int VIEW_SETTLE_MS = 120;
     private static final double MIN_SCALE = 0.01;
 
     static {
@@ -237,7 +239,8 @@ public class CircuitComponent extends JComponent implements ChangedListener, Lib
         setFocusable(true);
 
         addMouseWheelListener(e -> {
-            double f = Math.pow(0.9, e.getWheelRotation());
+            // precise rotation: a trackpad delivers fractions of a notch, which makes the zoom continuous
+            double f = Math.pow(0.9, e.getPreciseWheelRotation());
             if (scalingValid(f)) {
                 Vector pos = getPosVector(e);
                 transform.translate(pos.x, pos.y);
@@ -246,7 +249,7 @@ public class CircuitComponent extends JComponent implements ChangedListener, Lib
                 isManualScale = true;
                 if (circuitScrollPanel != null)
                     circuitScrollPanel.transformChanged(transform);
-                graphicHasChanged();
+                viewChanged();
             }
         });
 
@@ -541,6 +544,20 @@ public class CircuitComponent extends JComponent implements ChangedListener, Lib
     public void graphicHasChanged() {
         graphicHasChangedFlag = true;
         repaint();
+    }
+
+    /**
+     * Called if only the view transform has changed, e.g. while zooming or panning.
+     * Until the gesture settles the last frame is scaled and moved, which is fast;
+     * then the circuit is drawn again at full quality.
+     */
+    private void viewChanged() {
+        if (buffer != null && bufferTransform != null) {
+            viewOnlyChange = true;
+            repaint();
+            viewSettle.restart();
+        } else
+            graphicHasChanged();
     }
 
     /**
@@ -895,6 +912,15 @@ public class CircuitComponent extends JComponent implements ChangedListener, Lib
     private int bufferWidth;
     private int bufferHeight;
     private double bufferScale;
+    private AffineTransform bufferTransform;
+    private boolean viewOnlyChange;
+    private final javax.swing.Timer viewSettle = createViewSettleTimer();
+
+    private javax.swing.Timer createViewSettleTimer() {
+        javax.swing.Timer t = new javax.swing.Timer(VIEW_SETTLE_MS, e -> graphicHasChanged());
+        t.setRepeats(false);
+        return t;
+    }
 
     @Override
     protected void paintComponent(Graphics g) {
@@ -911,7 +937,25 @@ public class CircuitComponent extends JComponent implements ChangedListener, Lib
             fitCircuit();
 
         final double scaleX = transform.getScaleX();
+        boolean preview = viewOnlyChange && !graphicHasChangedFlag && !newBufferRequired && drawViewPreview(g);
+        if (!preview)
+            drawBuffer(g, newBufferRequired, deviceScale, scaleX);
+
+        Graphics2D gr2 = (Graphics2D) g;
+        AffineTransform oldTrans = gr2.getTransform();
+        gr2.transform(transform);
+        GraphicSwing gr = new GraphicSwing(gr2, (int) (2 / scaleX));
+        gr.enableAntiAlias(activeMouseController.drawables() < 200);
+        activeMouseController.drawTo(gr);
+        gr2.setTransform(oldTrans);
+
+        lastScaleX = scaleX;
+    }
+
+    private void drawBuffer(Graphics g, boolean newBufferRequired, double deviceScale, double scaleX) {
+        viewOnlyChange = false;
         if (graphicHasChangedFlag || newBufferRequired) {
+            bufferTransform = new AffineTransform(transform);
 
             if (newBufferRequired) {
                 bufferWidth = getWidth();
@@ -954,16 +998,29 @@ public class CircuitComponent extends JComponent implements ChangedListener, Lib
         }
 
         g.drawImage(buffer, 0, 0, bufferWidth, bufferHeight, null);
+    }
 
-        Graphics2D gr2 = (Graphics2D) g;
-        AffineTransform oldTrans = gr2.getTransform();
-        gr2.transform(transform);
-        GraphicSwing gr = new GraphicSwing(gr2, (int) (2 / scaleX));
-        gr.enableAntiAlias(activeMouseController.drawables() < 200);
-        activeMouseController.drawTo(gr);
-        gr2.setTransform(oldTrans);
-
-        lastScaleX = scaleX;
+    /**
+     * Draws the last frame moved and scaled to the current view transform.
+     *
+     * @param g the graphics to draw to
+     * @return false if the preview could not be drawn
+     */
+    private boolean drawViewPreview(Graphics g) {
+        AffineTransform delta = new AffineTransform(transform);
+        try {
+            delta.concatenate(bufferTransform.createInverse());
+        } catch (NoninvertibleTransformException e) {
+            return false;
+        }
+        g.setColor(ColorScheme.getSelected().getColor(ColorKey.BACKGROUND));
+        g.fillRect(0, 0, getWidth(), getHeight());
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g2.transform(delta);
+        g2.drawImage(buffer, 0, 0, bufferWidth, bufferHeight, null);
+        g2.dispose();
+        return true;
     }
 
     private void drawGrid(Graphics2D gr2) {
@@ -1704,7 +1761,7 @@ public class CircuitComponent extends JComponent implements ChangedListener, Lib
                     if (circuitScrollPanel != null)
                         circuitScrollPanel.transformChanged(transform);
                     pos = newPos;
-                    graphicHasChanged();
+                    viewChanged();
                 }
             }
         }
@@ -1865,7 +1922,10 @@ public class CircuitComponent extends JComponent implements ChangedListener, Lib
                     pos = p;
                 if (pressedElement != null && pressedElement.equalsDescription(DummyElement.RECTDESCRIPTION))
                     mouseResizeRect.activate(pressedElement, pos);
-                else
+                else if (GlassLaf.isActive() && pressedElement != null && !pressedElement.isPinPos(raster(pos)) && !isLocked()) {
+                    mouseMoveElement.activate(pressedElement, pos, true);
+                    mouseMoveElement.dragged(e);
+                } else
                     mouseSelect.activate(pos, p);
                 return true;
             }
@@ -2002,13 +2062,29 @@ public class CircuitComponent extends JComponent implements ChangedListener, Lib
         private Vector delta;
         private VisualElement originalVisualElement;
         private boolean minRaster;
+        private boolean dragging;
+        private boolean pressedOnElement;
 
         private MouseControllerMoveElement(Cursor cursor) {
             super(cursor);
         }
 
         private void activate(VisualElement visualElement, Vector pos) {
+            activate(visualElement, pos, false);
+        }
+
+        /**
+         * Activates the controller.
+         * With the glass look a clicked element is only lifted; it moves while it is dragged.
+         *
+         * @param visualElement the element
+         * @param pos           the mouse position
+         * @param dragging      true if the element is dragged right away
+         */
+        private void activate(VisualElement visualElement, Vector pos, boolean dragging) {
             super.activate();
+            this.dragging = dragging;
+            pressedOnElement = dragging;
             originalVisualElement = visualElement;
             this.visualElement = new VisualElement(visualElement);
             shallowCopy = getCircuit().createShallowCopy();
@@ -2023,6 +2099,23 @@ public class CircuitComponent extends JComponent implements ChangedListener, Lib
 
         @Override
         void clicked(MouseEvent e) {
+            if (GlassLaf.isActive()) {
+                Vector pos = getPosVector(e);
+                if (pressedOnElement && mouse.isPrimaryClick(e))
+                    return; // a click on the lifted element keeps it lifted
+                commit();
+                mouseNormal.activate();
+                // a click on another element lifts that one
+                VisualElement other = getCircuit().getElementAt(pos, false);
+                if (other != null && mouse.isPrimaryClick(e) && !other.isPinPos(raster(pos)))
+                    activate(other, pos, false);
+                return;
+            }
+            commit();
+            mouseNormal.activate();
+        }
+
+        private void commit() {
             if (!isLocked()) {
                 visualElement.setPos(visualElement.getPos());
                 if (!visualElement.getPos().equals(originalVisualElement.getPos())
@@ -2031,11 +2124,45 @@ public class CircuitComponent extends JComponent implements ChangedListener, Lib
                     insertWires(visualElement);
                 }
             }
-            mouseNormal.activate();
+        }
+
+        @Override
+        void pressed(MouseEvent e) {
+            if (GlassLaf.isActive()) {
+                Vector pos = getPosVector(e);
+                pressedOnElement = mouse.isPrimaryClick(e) && visualElement.matches(pos, false);
+                if (pressedOnElement)
+                    delta = visualElement.getPos().sub(pos);
+            }
+        }
+
+        @Override
+        boolean dragged(MouseEvent e) {
+            if (!GlassLaf.isActive())
+                return false;
+            if (!pressedOnElement)
+                return false; // pans the canvas, the element stays lifted
+            dragging = true;
+            follow(e);
+            return true;
+        }
+
+        @Override
+        void released(MouseEvent e) {
+            if (GlassLaf.isActive() && dragging) {
+                dragging = false;
+                commit();
+                mouseNormal.activate();
+            }
         }
 
         @Override
         void moved(MouseEvent e) {
+            if (!GlassLaf.isActive())
+                follow(e);
+        }
+
+        private void follow(MouseEvent e) {
             if (!isLocked()) {
                 Vector pos = getPosVector(e);
                 visualElement.setPos(toMinRaster(pos.add(delta), minRaster));

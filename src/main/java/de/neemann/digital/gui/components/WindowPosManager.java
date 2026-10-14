@@ -7,6 +7,8 @@ package de.neemann.digital.gui.components;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,6 +20,7 @@ public class WindowPosManager {
     private final Map<String, Window> windows;
     private final JFrame main;
     private boolean shutdown;
+    private Runnable simulationWindowClosed;
 
     /**
      * Creates a new instance
@@ -55,9 +58,36 @@ public class WindowPosManager {
         }
         if (shutdown)
             window.dispose();
-        else
+        else {
             windows.put(id, window);
+            if (isSimulationOutput(id))
+                window.addWindowListener(new WindowAdapter() {
+                    @Override
+                    public void windowClosing(WindowEvent e) {
+                        if (simulationWindowClosed != null)
+                            simulationWindowClosed.run();
+                    }
+                });
+        }
         return window;
+    }
+
+    /**
+     * Windows the user opens to inspect something, like test results or memory contents,
+     * are not the output of the simulation; closing them leaves the simulation running.
+     */
+    private static boolean isSimulationOutput(String id) {
+        return !(id.equals("testResult") || id.equals("testdata") || id.startsWith("RAM_DATA_"));
+    }
+
+    /**
+     * Sets the action run if the user closes a window showing the output of the running simulation,
+     * e.g. a graphics card or terminal window.
+     *
+     * @param simulationWindowClosed the action
+     */
+    public void setSimulationWindowClosed(Runnable simulationWindowClosed) {
+        this.simulationWindowClosed = simulationWindowClosed;
     }
 
     /**

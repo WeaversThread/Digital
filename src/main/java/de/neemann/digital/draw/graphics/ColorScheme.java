@@ -58,7 +58,7 @@ public final class ColorScheme {
             .set(ColorKey.WIRE_VALUE, Glass.SECONDARY)
             .set(ColorKey.WIRE_OUT, Glass.PRIMARY)
             .set(ColorKey.PINS, Glass.TERTIARY)
-            .set(ColorKey.HIGHLIGHT, Glass.BLUE)
+            .set(ColorKey.HIGHLIGHT, Glass.ORANGE)
             .set(ColorKey.ERROR, Glass.RED)
             .set(ColorKey.PASSED, Glass.tint(Glass.GREEN, 0.8f))
             .set(ColorKey.TESTCASE, Glass.SURFACE_DIM)
@@ -274,6 +274,13 @@ public final class ColorScheme {
      */
     public Color getColor(ColorKey key) {
         return colors[key.ordinal()];
+    }
+
+    /**
+     * @return true if the glass scheme is selected
+     */
+    public static boolean isGlass() {
+        return getSelected() == GLASS_SCHEME;
     }
 
     /**

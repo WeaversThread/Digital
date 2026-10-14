@@ -29,6 +29,12 @@ import static de.neemann.digital.gui.components.CircuitComponent.raster;
  */
 public class VisualElement implements Drawable, Movable, AttributeListener {
     private static final int PIN = 2;
+    private static final int HOVER_PAD = SIZE / 2;
+    private static final int HOVER_LIFT = 4;
+    private static final int HOVER_RADIUS = SIZE / 2;
+    private static final int GLOW_LAYERS = 12;
+    private static final int GLOW_STEP = 2;
+    private static final int GLOW_ALPHA = 12;
 
     private transient GraphicMinMax minMax;
     private transient GraphicMinMax minMaxText;
@@ -197,6 +203,11 @@ public class VisualElement implements Drawable, Movable, AttributeListener {
 
     @Override
     public void drawTo(Graphic graphic, Style highLight) {
+        if (highLight != null && ColorScheme.isGlass()) {
+            drawHovering(graphic, highLight.getColor());
+            return;
+        }
+
         drawShape(graphic, highLight);
 
         // draw circle around element
@@ -206,6 +217,38 @@ public class VisualElement implements Drawable, Movable, AttributeListener {
             Vector pos = mm.getMax().add(mm.getMin()).div(2);
             graphic.drawCircleHighlight(pos.sub(delta), pos.add(delta), highLight);
         }
+    }
+
+    /**
+     * Draws the element lifted off the canvas: a soft glow in the highlight color beneath it,
+     * a tile in the background color and the element itself, slightly raised.
+     */
+    private void drawHovering(Graphic graphic, Color glow) {
+        GraphicMinMax mm = getMinMax(false);
+        Vector min = mm.getMin().add(-HOVER_PAD, -HOVER_PAD);
+        Vector max = mm.getMax().add(HOVER_PAD, HOVER_PAD);
+        Color layer = new Color(glow.getRed(), glow.getGreen(), glow.getBlue(), GLOW_ALPHA);
+        Style glowStyle = Style.NORMAL.deriveFillStyle(layer);
+        for (int i = GLOW_LAYERS; i >= 1; i--) {
+            int spread = i * GLOW_STEP;
+            graphic.drawPolygon(roundRect(min.add(-spread, -spread + HOVER_LIFT), max.add(spread, spread + HOVER_LIFT), HOVER_RADIUS + spread), glowStyle);
+        }
+        graphic.drawPolygon(roundRect(min.add(0, -HOVER_LIFT), max.add(0, -HOVER_LIFT), HOVER_RADIUS),
+                Style.NORMAL.deriveFillStyle(ColorKey.BACKGROUND));
+        drawShape(new GraphicTransform(graphic, new TransformTranslate(new Vector(0, -HOVER_LIFT))), null);
+    }
+
+    private static de.neemann.digital.draw.graphics.Polygon roundRect(Vector min, Vector max, int r) {
+        return new de.neemann.digital.draw.graphics.Polygon(true)
+                .add(min.x + r, min.y)
+                .add(max.x - r, min.y)
+                .add(new Vector(max.x, min.y), new Vector(max.x, min.y + r))
+                .add(max.x, max.y - r)
+                .add(new Vector(max.x, max.y), new Vector(max.x - r, max.y))
+                .add(min.x + r, max.y)
+                .add(new Vector(min.x, max.y), new Vector(min.x, max.y - r))
+                .add(min.x, min.y + r)
+                .add(new Vector(min.x, min.y), new Vector(min.x + r, min.y));
     }
 
     private void drawShape(Graphic graphic, Style highLight) {
