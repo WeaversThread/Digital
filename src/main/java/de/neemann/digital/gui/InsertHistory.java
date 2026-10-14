@@ -88,6 +88,18 @@ public class InsertHistory implements LibraryListener {
     }
 
     /**
+     * @return the names of the recently inserted elements, the most recent first
+     */
+    public java.util.List<String> getRecentNames() {
+        ArrayList<WrapperAction> sorted = new ArrayList<>(wrappers);
+        sorted.sort((w1, w2) -> Integer.compare(w2.time, w1.time));
+        ArrayList<String> names = new ArrayList<>();
+        for (WrapperAction w : sorted)
+            names.add(w.action.getName());
+        return names;
+    }
+
+    /**
      * @return the last insert action
      */
     public InsertAction getLastInsertAction() {

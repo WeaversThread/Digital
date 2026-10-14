@@ -42,6 +42,7 @@ public class VisualElement implements Drawable, Movable, AttributeListener {
     private static final int OUTLINE = 2;
     private static final float LIFTED_TINT = 0.10f;
     private static final float HOVER_TINT = 0.05f;
+    private static final int HOVER_GLOW_ALPHA = 9;
     private static final float INK_LIGHTEN = 0.6f;
 
     private transient GraphicMinMax minMax;
@@ -233,7 +234,7 @@ public class VisualElement implements Drawable, Movable, AttributeListener {
      * @param graphic the graphic to draw to
      */
     public void drawHovered(Graphic graphic) {
-        drawCard(graphic, Color.WHITE, false);
+        drawCard(graphic, ColorScheme.getSelected().getColor(ColorKey.HIGHLIGHT), false);
     }
 
     /**
@@ -247,11 +248,10 @@ public class VisualElement implements Drawable, Movable, AttributeListener {
         Vector max = mm.getMax().add(CARD_PAD, CARD_PAD);
         int lift = lifted ? LIFT : 0;
         Color background = ColorScheme.getSelected().getColor(ColorKey.BACKGROUND);
-        if (lifted) {
+        if (lifted)
             drawHalo(graphic, min, max, SHADOW_OFFSET, SHADOW_LAYERS, SHADOW_STEP, new Color(0, 0, 0, SHADOW_ALPHA));
-            drawHalo(graphic, min, max, 0, GLOW_LAYERS, GLOW_STEP,
-                    new Color(accent.getRed(), accent.getGreen(), accent.getBlue(), GLOW_ALPHA));
-        }
+        drawHalo(graphic, min, max, 0, GLOW_LAYERS, GLOW_STEP,
+                new Color(accent.getRed(), accent.getGreen(), accent.getBlue(), lifted ? GLOW_ALPHA : HOVER_GLOW_ALPHA));
         de.neemann.digital.draw.graphics.Polygon tile = roundRect(min.add(0, -lift), max.add(0, -lift), CARD_RADIUS);
         graphic.drawPolygon(tile, Style.NORMAL.deriveFillStyle(blend(background, accent, lifted ? LIFTED_TINT : HOVER_TINT)));
         if (lifted)

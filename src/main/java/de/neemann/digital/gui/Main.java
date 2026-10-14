@@ -130,6 +130,7 @@ public final class Main extends JFrame implements ClosingWindowListener.ConfirmS
     private final ElementLibrary library;
     private final ShapeFactory shapeFactory;
     private final JLabel statusLabel;
+    private QuickAdd quickAdd;
     private final JLabel fileLabel = GlassLaf.isActive() ? new JLabel(Lang.get("digital")) : null;
     private final StateManager stateManager = new StateManager();
     private final ScheduledThreadPoolExecutor timerExecutor = new ScheduledThreadPoolExecutor(1);
@@ -268,7 +269,10 @@ public final class Main extends JFrame implements ClosingWindowListener.ConfirmS
         library.addListener(insertHistory);
         final LibrarySelector librarySelector = new LibrarySelector(library, shapeFactory);
         library.addListener(librarySelector);
-        menuBar.add(librarySelector.buildMenu(insertHistory, circuitComponent));
+        JMenu componentsMenu = librarySelector.buildMenu(insertHistory, circuitComponent);
+        menuBar.add(componentsMenu);
+        if (GlassLaf.isActive())
+            createQuickAdd(componentsMenu);
 
         menuBar.add(WindowManager.getInstance().registerAndCreateMenu(this));
 
@@ -508,6 +512,25 @@ public final class Main extends JFrame implements ClosingWindowListener.ConfirmS
             view.addSeparator();
             view.add(viewHelp.createJMenuItem());
         }
+    }
+
+    /**
+     * The quick add palette opens with A, a two finger click on the canvas or from the components menu.
+     */
+    private void createQuickAdd(JMenu componentsMenu) {
+        quickAdd = new QuickAdd(library, shapeFactory, circuitComponent, insertHistory);
+        ToolTipAction quickAddAction = new ToolTipAction(Lang.get("menu_quickAdd")) {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Point p = MouseInfo.getPointerInfo().getLocation();
+                Rectangle r = new Rectangle(circuitComponent.getLocationOnScreen(), circuitComponent.getSize());
+                if (!r.contains(p))
+                    p = new Point(r.x + r.width / 3, r.y + r.height / 3);
+                showQuickAdd(p);
+            }
+        }.setAccelerator("A").enableAcceleratorIn(circuitComponent);
+        componentsMenu.insert(quickAddAction.createJMenuItem(), 0);
+        componentsMenu.insertSeparator(1);
     }
 
     /**
@@ -2341,6 +2364,16 @@ public final class Main extends JFrame implements ClosingWindowListener.ConfirmS
             } else
                 new MainBuilder().setMainFrame().setFileToOpen(file).build().setVisible(true);
         }
+    }
+
+    /**
+     * Shows the quick add palette at the given screen location
+     *
+     * @param screenLocation the location on the screen
+     */
+    public void showQuickAdd(Point screenLocation) {
+        if (quickAdd != null && !circuitComponent.isLocked())
+            quickAdd.show(this, screenLocation);
     }
 
     /**

@@ -1905,6 +1905,9 @@ public class CircuitComponent extends JComponent implements ChangedListener, Lib
                 SearchResult sel = getVisualElement(pos, true);
                 if (sel.getVisualElement() != null)
                     editAttributes(sel.getVisualElement(), e);
+                else if (sel.getState() == SearchResult.State.NONE && GlassLaf.isActive()
+                        && getCircuit().getWireAt(pos, SIZE2) == null)
+                    parent.showQuickAdd(e.getLocationOnScreen()); // a two finger click on the canvas
             } else if (mouse.isPrimaryClick(e) && hadFocusAtClick) {
                 SearchResult sel = getVisualElement(pos, false);
                 switch (sel.getState()) {
