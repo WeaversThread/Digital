@@ -29,12 +29,20 @@ import static de.neemann.digital.gui.components.CircuitComponent.raster;
  */
 public class VisualElement implements Drawable, Movable, AttributeListener {
     private static final int PIN = 2;
-    private static final int HOVER_PAD = SIZE / 2;
-    private static final int HOVER_LIFT = 4;
-    private static final int HOVER_RADIUS = SIZE / 2;
-    private static final int GLOW_LAYERS = 12;
+    private static final int CARD_PAD = SIZE / 3;
+    private static final int CARD_RADIUS = SIZE / 2;
+    private static final int LIFT = 4;
+    private static final int SHADOW_LAYERS = 8;
+    private static final int SHADOW_STEP = 2;
+    private static final int SHADOW_OFFSET = 6;
+    private static final int SHADOW_ALPHA = 14;
+    private static final int GLOW_LAYERS = 5;
     private static final int GLOW_STEP = 2;
-    private static final int GLOW_ALPHA = 12;
+    private static final int GLOW_ALPHA = 16;
+    private static final int OUTLINE = 2;
+    private static final float LIFTED_TINT = 0.10f;
+    private static final float HOVER_TINT = 0.05f;
+    private static final float INK_LIGHTEN = 0.6f;
 
     private transient GraphicMinMax minMax;
     private transient GraphicMinMax minMaxText;
@@ -204,7 +212,7 @@ public class VisualElement implements Drawable, Movable, AttributeListener {
     @Override
     public void drawTo(Graphic graphic, Style highLight) {
         if (highLight != null && ColorScheme.isGlass()) {
-            drawHovering(graphic, highLight.getColor());
+            drawCard(graphic, highLight.getColor(), true);
             return;
         }
 
@@ -220,22 +228,71 @@ public class VisualElement implements Drawable, Movable, AttributeListener {
     }
 
     /**
-     * Draws the element lifted off the canvas: a soft glow in the highlight color beneath it,
-     * a tile in the background color and the element itself, slightly raised.
+     * Draws the element as hovered by the mouse: a faint tile behind it and brighter ink.
+     *
+     * @param graphic the graphic to draw to
      */
-    private void drawHovering(Graphic graphic, Color glow) {
-        GraphicMinMax mm = getMinMax(false);
-        Vector min = mm.getMin().add(-HOVER_PAD, -HOVER_PAD);
-        Vector max = mm.getMax().add(HOVER_PAD, HOVER_PAD);
-        Color layer = new Color(glow.getRed(), glow.getGreen(), glow.getBlue(), GLOW_ALPHA);
-        Style glowStyle = Style.NORMAL.deriveFillStyle(layer);
-        for (int i = GLOW_LAYERS; i >= 1; i--) {
-            int spread = i * GLOW_STEP;
-            graphic.drawPolygon(roundRect(min.add(-spread, -spread + HOVER_LIFT), max.add(spread, spread + HOVER_LIFT), HOVER_RADIUS + spread), glowStyle);
+    public void drawHovered(Graphic graphic) {
+        drawCard(graphic, Color.WHITE, false);
+    }
+
+    /**
+     * Draws the element as a card. A lifted card floats above the canvas: a soft shadow and a
+     * tight glow in the accent color beneath, an accent outline, and the element raised a little.
+     * The ink is lightened and the tile covers the labels, so the text stays readable.
+     */
+    private void drawCard(Graphic graphic, Color accent, boolean lifted) {
+        GraphicMinMax mm = getMinMax(true);
+        Vector min = mm.getMin().add(-CARD_PAD, -CARD_PAD);
+        Vector max = mm.getMax().add(CARD_PAD, CARD_PAD);
+        int lift = lifted ? LIFT : 0;
+        Color background = ColorScheme.getSelected().getColor(ColorKey.BACKGROUND);
+        if (lifted) {
+            drawHalo(graphic, min, max, SHADOW_OFFSET, SHADOW_LAYERS, SHADOW_STEP, new Color(0, 0, 0, SHADOW_ALPHA));
+            drawHalo(graphic, min, max, 0, GLOW_LAYERS, GLOW_STEP,
+                    new Color(accent.getRed(), accent.getGreen(), accent.getBlue(), GLOW_ALPHA));
         }
-        graphic.drawPolygon(roundRect(min.add(0, -HOVER_LIFT), max.add(0, -HOVER_LIFT), HOVER_RADIUS),
-                Style.NORMAL.deriveFillStyle(ColorKey.BACKGROUND));
-        drawShape(new GraphicTransform(graphic, new TransformTranslate(new Vector(0, -HOVER_LIFT))), null);
+        de.neemann.digital.draw.graphics.Polygon tile = roundRect(min.add(0, -lift), max.add(0, -lift), CARD_RADIUS);
+        graphic.drawPolygon(tile, Style.NORMAL.deriveFillStyle(blend(background, accent, lifted ? LIFTED_TINT : HOVER_TINT)));
+        if (lifted)
+            graphic.drawPolygon(tile, Style.NORMAL.deriveStyle(OUTLINE, false, accent));
+        drawShape(new LightInk(new GraphicTransform(graphic, new TransformTranslate(new Vector(0, -lift)))), null);
+    }
+
+    private static void drawHalo(Graphic graphic, Vector min, Vector max, int offset, int layers, int step, Color color) {
+        Style style = Style.NORMAL.deriveFillStyle(color);
+        for (int i = layers; i >= 1; i--) {
+            int spread = i * step;
+            graphic.drawPolygon(roundRect(min.add(-spread, -spread + offset), max.add(spread, spread + offset), CARD_RADIUS + spread), style);
+        }
+    }
+
+    private static Color blend(Color base, Color c, float a) {
+        return new Color(
+                Math.round(c.getRed() * a + base.getRed() * (1 - a)),
+                Math.round(c.getGreen() * a + base.getGreen() * (1 - a)),
+                Math.round(c.getBlue() * a + base.getBlue() * (1 - a)));
+    }
+
+    /**
+     * Lightens the light colors, the ink of lines and text, and keeps the dark fills.
+     */
+    private static final class LightInk extends GraphicRestyle {
+        private LightInk(Graphic parent) {
+            super(parent);
+        }
+
+        @Override
+        public Style getStyle(Style style) {
+            Color c = style.getColor();
+            if (c == null || c.getRed() + c.getGreen() + c.getBlue() < 3 * 110)
+                return style;
+            return style.deriveColor(new Color(
+                    Math.round(c.getRed() + (255 - c.getRed()) * INK_LIGHTEN),
+                    Math.round(c.getGreen() + (255 - c.getGreen()) * INK_LIGHTEN),
+                    Math.round(c.getBlue() + (255 - c.getBlue()) * INK_LIGHTEN),
+                    c.getAlpha()));
+        }
     }
 
     private static de.neemann.digital.draw.graphics.Polygon roundRect(Vector min, Vector max, int r) {

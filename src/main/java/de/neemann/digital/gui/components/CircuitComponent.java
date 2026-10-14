@@ -1747,6 +1747,12 @@ public class CircuitComponent extends JComponent implements ChangedListener, Lib
         }
 
         @Override
+        public void mouseExited(MouseEvent e) {
+            if (activeMouseController == mouseNormal)
+                ((MouseControllerNormal) mouseNormal).clearHover();
+        }
+
+        @Override
         public void mouseDragged(MouseEvent e) {
             lastMousePos = new Vector(e.getX(), e.getY());
             if (wasMoved(e) || isMoved) {
@@ -1854,6 +1860,7 @@ public class CircuitComponent extends JComponent implements ChangedListener, Lib
         private Vector pos;
         private MouseEvent downButton;
         private VisualElement pressedElement;
+        private VisualElement hovered;
 
         private MouseControllerNormal(Cursor cursor) {
             super(cursor);
@@ -1863,6 +1870,31 @@ public class CircuitComponent extends JComponent implements ChangedListener, Lib
         void activate() {
             super.activate();
             pos = null;
+            hovered = null;
+        }
+
+        @Override
+        void moved(MouseEvent e) {
+            if (!GlassLaf.isActive())
+                return;
+            VisualElement h = getCircuit().getElementAt(getPosVector(e), false);
+            if (h != hovered) {
+                hovered = h;
+                repaint();
+            }
+        }
+
+        private void clearHover() {
+            if (hovered != null) {
+                hovered = null;
+                repaint();
+            }
+        }
+
+        @Override
+        public void drawTo(Graphic gr) {
+            if (hovered != null && ColorScheme.isGlass() && getCircuit().getElements().contains(hovered))
+                hovered.drawHovered(gr);
         }
 
         @Override
@@ -2151,6 +2183,7 @@ public class CircuitComponent extends JComponent implements ChangedListener, Lib
         void released(MouseEvent e) {
             if (GlassLaf.isActive() && dragging) {
                 dragging = false;
+                visualElement.setPos(toMinRaster(visualElement.getPos(), minRaster));
                 commit();
                 mouseNormal.activate();
             }
@@ -2165,7 +2198,10 @@ public class CircuitComponent extends JComponent implements ChangedListener, Lib
         private void follow(MouseEvent e) {
             if (!isLocked()) {
                 Vector pos = getPosVector(e);
-                visualElement.setPos(toMinRaster(pos.add(delta), minRaster));
+                if (dragging) // follows the cursor exactly, snaps to the grid when dropped
+                    visualElement.setPos(pos.add(delta));
+                else
+                    visualElement.setPos(toMinRaster(pos.add(delta), minRaster));
                 repaint();
             }
         }
