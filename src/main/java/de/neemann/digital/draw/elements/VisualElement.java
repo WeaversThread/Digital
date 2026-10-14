@@ -17,6 +17,7 @@ import de.neemann.gui.Screen;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BaseMultiResolutionImage;
 import java.awt.image.BufferedImage;
 
 import static de.neemann.digital.draw.shapes.GenericShape.SIZE;
@@ -268,7 +269,11 @@ public class VisualElement implements Drawable, Movable, AttributeListener {
     public ImageIcon createIcon(int maxHeight) {
         float scaling = Screen.getInstance().getScaling();
         BufferedImage bi = getBufferedImage(0.5 * scaling, (int) (maxHeight * scaling));
-        return new ImageIcon(bi);
+        // a second image at twice the resolution keeps the icon sharp on retina displays
+        BufferedImage hi = getBufferedImage(scaling, (int) (2 * maxHeight * scaling));
+        if (hi.getWidth() < bi.getWidth() * 2 - 2 || hi.getHeight() < bi.getHeight() * 2 - 2)
+            return new ImageIcon(bi);
+        return new ImageIcon(new BaseMultiResolutionImage(bi, hi));
     }
 
     /**

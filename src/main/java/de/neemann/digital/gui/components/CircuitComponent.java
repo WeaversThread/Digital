@@ -892,25 +892,37 @@ public class CircuitComponent extends JComponent implements ChangedListener, Lib
 
 
     private BufferedImage buffer;
+    private int bufferWidth;
+    private int bufferHeight;
+    private double bufferScale;
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
 
-        boolean newBufferRequired = buffer == null
-                || getWidth() != buffer.getWidth()
-                || getHeight() != buffer.getHeight();
+        // the buffer is drawn in device pixels, so it stays sharp on retina displays
+        final double deviceScale = ((Graphics2D) g).getTransform().getScaleX();
+        boolean sizeChanged = buffer == null
+                || getWidth() != bufferWidth
+                || getHeight() != bufferHeight;
+        boolean newBufferRequired = sizeChanged || deviceScale != bufferScale;
 
-        if (newBufferRequired && !isManualScale)
+        if (sizeChanged && !isManualScale)
             fitCircuit();
 
         final double scaleX = transform.getScaleX();
         if (graphicHasChangedFlag || newBufferRequired) {
 
-            if (newBufferRequired)
-                buffer = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration().createCompatibleImage(getWidth(), getHeight());
+            if (newBufferRequired) {
+                bufferWidth = getWidth();
+                bufferHeight = getHeight();
+                bufferScale = deviceScale;
+                buffer = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration()
+                        .createCompatibleImage((int) Math.ceil(bufferWidth * deviceScale), (int) Math.ceil(bufferHeight * deviceScale));
+            }
 
             Graphics2D gr2 = buffer.createGraphics();
+            gr2.scale(deviceScale, deviceScale);
 
             GraphicSwing gr = new GraphicSwing(gr2, (int) (2 / scaleX));
             gr.enableAntiAlias(antiAlias);
@@ -941,7 +953,7 @@ public class CircuitComponent extends JComponent implements ChangedListener, Lib
             graphicHasChangedFlag = false;
         }
 
-        g.drawImage(buffer, 0, 0, null);
+        g.drawImage(buffer, 0, 0, bufferWidth, bufferHeight, null);
 
         Graphics2D gr2 = (Graphics2D) g;
         AffineTransform oldTrans = gr2.getTransform();

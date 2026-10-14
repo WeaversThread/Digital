@@ -34,10 +34,13 @@ public final class App {
             System.setProperty("apple.awt.application.name", "Digital");
             System.setProperty("apple.awt.application.appearance", "NSAppearanceNameDarkAqua");
         }
-        int fontScaling = Settings.getInstance().get(de.neemann.digital.core.element.Keys.SETTINGS_FONT_SCALING);
-        if (fontScaling != 100 && System.getProperty("flatlaf.uiScale") == null)
-            System.setProperty("flatlaf.uiScale", Float.toString(fontScaling / 100f));
+        // installed before anything else, the canvas styles read the font of the look and feel
         GlassLaf.setup();
+        int fontScaling = Settings.getInstance().get(de.neemann.digital.core.element.Keys.SETTINGS_FONT_SCALING);
+        if (fontScaling != 100 && System.getProperty("flatlaf.uiScale") == null) {
+            System.setProperty("flatlaf.uiScale", Float.toString(fontScaling / 100f));
+            GlassLaf.setup();
+        }
 
         if (Desktop.isDesktopSupported()) {
             Desktop desktop = Desktop.getDesktop();

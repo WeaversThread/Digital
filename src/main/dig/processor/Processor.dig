@@ -54,7 +54,7 @@ Single-Cycle CPU.}}</string>
           <int>16</int>
         </entry>
       </elementAttributes>
-      <pos x="840" y="360"/>
+      <pos x="840" y="380"/>
     </visualElement>
     <visualElement>
       <elementName>ImReg.dig</elementName>

@@ -7,6 +7,9 @@ package de.neemann.digital.draw.graphics;
 
 import de.neemann.digital.core.Value;
 
+import de.neemann.gui.GlassLaf;
+
+import javax.swing.*;
 import java.awt.*;
 
 /**
@@ -172,7 +175,7 @@ public final class Style {
         this.mattersForSize = builder.mattersForSize;
 
         stroke = new BasicStroke(thickness, builder.endCap, BasicStroke.JOIN_MITER, 10f, dash, 0f);
-        font = new Font(null, fontStyle, fontSize);
+        font = new Font(FontFamily.NAME, fontStyle, fontSize);
     }
 
     /**
@@ -347,6 +350,21 @@ public final class Style {
                 .setFilled(true)
                 .setColor(colorKey)
                 .build();
+    }
+
+    /**
+     * The font family of the circuit text: the system font when the glass look is active,
+     * otherwise the default logical font.
+     */
+    private static final class FontFamily {
+        private static final String NAME = createName();
+
+        private static String createName() {
+            if (!GlassLaf.isActive())
+                return null;
+            Font f = UIManager.getFont("defaultFont");
+            return f == null ? null : f.getFamily();
+        }
     }
 
     private static final class Builder {
