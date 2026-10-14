@@ -72,6 +72,10 @@ public class Export {
      * @throws IOException IOException
      */
     public void export(OutputStream out) throws IOException {
+        ColorScheme.<IOException>runWithPaperScheme(() -> exportWithSelectedScheme(out));
+    }
+
+    private void exportWithSelectedScheme(OutputStream out) throws IOException {
         try (Graphic gr = factory.create(out)) {
             GraphicMinMax minMax = new GraphicMinMax(gr);
             circuit.drawTo(minMax, hideTests);

@@ -226,6 +226,8 @@ public abstract class ToolTipAction extends AbstractAction {
         }
         if (accelerator != null)
             i.setAccelerator(accelerator);
+        if (GlassLaf.isActive()) // menus are text only, icons belong to the toolbar
+            i.setIcon(null);
         return i;
     }
 

@@ -5,6 +5,8 @@
  */
 package de.neemann.digital.gui.components.karnaugh;
 
+import de.neemann.gui.Glass;
+import de.neemann.gui.GlassLaf;
 import de.neemann.digital.analyse.expression.Expression;
 import de.neemann.digital.analyse.expression.Not;
 import de.neemann.digital.analyse.expression.Variable;
@@ -26,6 +28,9 @@ import java.util.ArrayList;
  */
 public class KarnaughMapComponent extends JComponent {
     private static final int STROKE_WIDTH = 4;
+    private static final Color PAPER = GlassLaf.isActive() ? Glass.BASE : Color.WHITE;
+    private static final Color INK = GlassLaf.isActive() ? Glass.PRIMARY : Color.BLACK;
+    private static final Color LINE = GlassLaf.isActive() ? Glass.QUATERNARY : Color.GRAY;
     private static final Color[] COVER_COLORS = new Color[]{
             new Color(255, 0, 0, 128), new Color(0, 255, 0, 128),
             new Color(128, 0, 0, 128), new Color(0, 0, 128, 128),
@@ -104,9 +109,9 @@ public class KarnaughMapComponent extends JComponent {
         gr.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
         int width = getWidth();
         int height = getHeight();
-        gr.setColor(Color.WHITE);
+        gr.setColor(PAPER);
         gr.fillRect(0, 0, width, height);
-        gr.setColor(Color.BLACK);
+        gr.setColor(INK);
 
         if (kv != null) {
             AffineTransform trans = gr.getTransform(); // store the old transform
@@ -135,7 +140,7 @@ public class KarnaughMapComponent extends JComponent {
             gr.translate(xOffs, yOffs);   // center the kv map
 
             // draw table
-            gr.setColor(Color.GRAY);
+            gr.setColor(LINE);
             gr.setStroke(new BasicStroke(STROKE_WIDTH / 2f));
             for (int i = 0; i <= kvWidth; i++) {
                 int dy1 = isNoHeaderLine(kv.getHeaderTop(), i - 1) ? cellSize : 0;
@@ -152,10 +157,10 @@ public class KarnaughMapComponent extends JComponent {
 
             // fill in bool table content
             for (KarnaughMap.Cell cell : kv.getCells()) {
-                gr.setColor(Color.BLACK);
+                gr.setColor(INK);
                 gr.setFont(valuesFont);
                 drawString(boolTable.get(cell.getBoolTableRow()).toString(), cell.getCol() + 1, cell.getRow() + 1);
-                gr.setColor(Color.GRAY);
+                gr.setColor(LINE);
                 gr.setFont(origFont);
                 gr.drawString(Integer.toString(cell.getBoolTableRow()),
                         (cell.getCol() + 1) * cellSize + 1,
@@ -166,7 +171,7 @@ public class KarnaughMapComponent extends JComponent {
             varRectList.reset(xOffs, yOffs);
 
             // draw the text in the borders
-            gr.setColor(Color.BLACK);
+            gr.setColor(INK);
             gr.setFont(headerFont);
             drawVerticalHeader(kv.getHeaderLeft(), 0);
             drawVerticalHeader(kv.getHeaderRight(), kvWidth + 1);
@@ -215,7 +220,7 @@ public class KarnaughMapComponent extends JComponent {
             gr.drawString(message, 10, 20);
 
         if (startVarRect != null) {
-            gr.setColor(Color.BLACK);
+            gr.setColor(INK);
             startVarRect.getFragment().draw(gr, xDrag, yDrag);
         }
     }

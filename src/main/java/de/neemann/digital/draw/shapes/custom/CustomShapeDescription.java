@@ -164,7 +164,7 @@ public final class CustomShapeDescription implements Iterable<CustomShapeDescrip
 
         @Override
         public void drawTo(Graphic graphic, Style highLight) {
-            graphic.drawLine(p1, p2, Style.NORMAL.deriveStyle(thickness, false, color));
+            graphic.drawLine(p1, p2, Style.NORMAL.deriveStyle(thickness, false, ColorScheme.mapInk(color)));
         }
 
         /**
@@ -209,7 +209,7 @@ public final class CustomShapeDescription implements Iterable<CustomShapeDescrip
 
         @Override
         public void drawTo(Graphic graphic, Style highLight) {
-            graphic.drawCircle(p1, p2, Style.NORMAL.deriveStyle(thickness, filled, color));
+            graphic.drawCircle(p1, p2, Style.NORMAL.deriveStyle(thickness, filled, ColorScheme.mapShape(color, filled)));
         }
 
         /**
@@ -251,7 +251,7 @@ public final class CustomShapeDescription implements Iterable<CustomShapeDescrip
 
         @Override
         public void drawTo(Graphic graphic, Style highLight) {
-            graphic.drawPolygon(poly, Style.NORMAL.deriveStyle(thickness, filled, color));
+            graphic.drawPolygon(poly, Style.NORMAL.deriveStyle(thickness, filled, ColorScheme.mapShape(color, filled)));
         }
 
         /**
@@ -302,7 +302,7 @@ public final class CustomShapeDescription implements Iterable<CustomShapeDescrip
             graphic.drawText(p1, p2, text, orientation,
                     Style.NORMAL
                             .deriveFontStyle(size, true)
-                            .deriveColor(color));
+                            .deriveColor(ColorScheme.mapInk(color)));
         }
 
         @Override

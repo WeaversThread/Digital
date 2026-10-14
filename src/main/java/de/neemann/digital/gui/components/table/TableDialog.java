@@ -79,8 +79,11 @@ import static de.neemann.digital.analyse.ModelAnalyser.addOne;
 public class TableDialog extends JDialog {
     private static final Logger LOGGER = LoggerFactory.getLogger(TableDialog.class);
     private static final Preferences PREFS = Preferences.userRoot().node("dig").node("generator");
-    private static final Color MYGRAY = new Color(230, 230, 230);
-    private static final Color ODDWHITE = new Color(255, 255, 220);
+    private static final boolean GLASS = GlassLaf.isActive();
+    private static final Color MYGRAY = GLASS ? Glass.SURFACE : new Color(230, 230, 230);
+    private static final Color ODDWHITE = GLASS ? Glass.white(0.03f) : new Color(255, 255, 220);
+    private static final Color EVENWHITE = GLASS ? Glass.BASE : Color.WHITE;
+    private static final Color INK = GLASS ? Glass.PRIMARY : Color.BLACK;
     private static final List<Key> LIST = new ArrayList<>();
 
     static {
@@ -881,7 +884,7 @@ public class TableDialog extends JDialog {
 
     private final class CenterDefaultTableCellRenderer extends DefaultTableCellRenderer {
 
-        private final Color red = new Color(220, 0, 0);
+        private final Color red = GLASS ? Glass.RED : new Color(220, 0, 0);
 
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
@@ -892,7 +895,7 @@ public class TableDialog extends JDialog {
                 label.setBackground(MYGRAY);
             else {
                 if ((row & 4) == 0)
-                    label.setBackground(Color.WHITE);
+                    label.setBackground(EVENWHITE);
                 else
                     label.setBackground(ODDWHITE);
             }
@@ -908,7 +911,7 @@ public class TableDialog extends JDialog {
                 if (bitMod.isModified()) {
                     label.setForeground(red);
                 } else {
-                    label.setForeground(Color.BLACK);
+                    label.setForeground(INK);
                 }
             }
 
@@ -931,7 +934,11 @@ public class TableDialog extends JDialog {
             } catch (ParseException e) {
                 label.setText(value.toString());
             }
-            setBorder(BorderFactory.createRaisedBevelBorder());
+            if (GLASS) {
+                label.setForeground(Glass.TERTIARY);
+                setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Glass.SURFACE));
+            } else
+                setBorder(BorderFactory.createRaisedBevelBorder());
 
             return label;
         }

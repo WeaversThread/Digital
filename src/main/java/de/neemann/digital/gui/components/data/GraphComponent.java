@@ -5,6 +5,8 @@
  */
 package de.neemann.digital.gui.components.data;
 
+import de.neemann.digital.draw.graphics.ColorScheme;
+import de.neemann.digital.draw.graphics.ColorKey;
 import de.neemann.digital.core.SyncAccess;
 import de.neemann.digital.data.DataPlotter;
 import de.neemann.digital.data.ValueTable;
@@ -71,7 +73,7 @@ public class GraphComponent extends JComponent {
     @Override
     protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g;
-        g.setColor(Color.WHITE);
+        g.setColor(ColorScheme.getSelected().getColor(ColorKey.BACKGROUND));
         g.fillRect(0, 0, getWidth(), getHeight());
 
         plotter.drawTo(new GraphicSwing(g2), null);

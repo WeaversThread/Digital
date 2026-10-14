@@ -20,6 +20,8 @@ import de.neemann.digital.testing.TestExecutor;
 import de.neemann.digital.testing.TestResult;
 import de.neemann.digital.testing.TestingDataException;
 import de.neemann.digital.testing.parser.TestRow;
+import de.neemann.gui.Glass;
+import de.neemann.gui.GlassLaf;
 import de.neemann.gui.IconCreator;
 import de.neemann.gui.LineBreaker;
 import de.neemann.gui.MyFileChooser;
@@ -43,11 +45,15 @@ public class ValueTableDialog extends JDialog {
     /**
      * Background color for failed tests
      */
-    static final Color FAILED_COLOR = new Color(255, 200, 200);
+    static final Color FAILED_COLOR = GlassLaf.isActive() ? Glass.tint(Glass.RED, 0.22f) : new Color(255, 200, 200);
     /**
      * Background color for passed tests
      */
-    static final Color PASSED_COLOR = new Color(200, 255, 200);
+    static final Color PASSED_COLOR = GlassLaf.isActive() ? Glass.tint(Glass.GREEN, 0.16f) : new Color(200, 255, 200);
+    /**
+     * Background color of the cells without a test result
+     */
+    static final Color NORMAL_COLOR = GlassLaf.isActive() ? Glass.BASE : Color.WHITE;
     private static final Icon ICON_FAILED = IconCreator.create("testFailed.png");
     private static final Icon ICON_PASSED = IconCreator.create("testPassed.png");
     private static final Icon ICON_GRAPH = IconCreator.create("measurement-graph.png");
@@ -223,7 +229,7 @@ public class ValueTableDialog extends JDialog {
 
                 switch (((Value) value).getState()) {
                     case NORMAL:
-                        comp.setBackground(Color.WHITE);
+                        comp.setBackground(NORMAL_COLOR);
                         break;
                     case FAIL:
                         comp.setBackground(FAILED_COLOR);
@@ -238,7 +244,7 @@ public class ValueTableDialog extends JDialog {
     }
 
     private static class NumberRenderer extends DefaultTableCellRenderer {
-        private static final Color NUM_BACKGROUND_COLOR = new Color(238, 238, 238);
+        private static final Color NUM_BACKGROUND_COLOR = GlassLaf.isActive() ? Glass.SURFACE_DIM : new Color(238, 238, 238);
 
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {

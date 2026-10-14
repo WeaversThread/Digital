@@ -88,10 +88,9 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.1</version>
+                <version>3.13.0</version>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <release>17</release>
                     <compilerArgs>
                         <!--arg>-g:none</arg-->
                     </compilerArgs>
@@ -135,12 +134,11 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>de.neemann.digital.gui.Main</mainClass>
+                            <mainClass>de.neemann.digital.gui.App</mainClass>
                         </manifest>
                         <manifestEntries>
                             <Build-SCM-Revision>${git.commit.id.describe}</Build-SCM-Revision>
                             <Build-Time>${buildTimestamp}</Build-Time>
-                            <SplashScreen-Image>icons/splash.png</SplashScreen-Image>
                         </manifestEntries>
                     </archive>
                 </configuration>
@@ -200,12 +198,11 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>de.neemann.digital.gui.Main</mainClass>
+                            <mainClass>de.neemann.digital.gui.App</mainClass>
                         </manifest>
                         <manifestEntries>
                             <Build-SCM-Revision>${git.commit.id.describe}</Build-SCM-Revision>
                             <Build-Time>${buildTimestamp}</Build-Time>
-                            <SplashScreen-Image>icons/splash.png</SplashScreen-Image>
                         </manifestEntries>
                     </archive>
                     <appendAssemblyId>false</appendAssemblyId>
@@ -235,7 +232,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.4</version>
+                <version>0.8.12</version>
                 <executions>
                     <execution>
                         <id>default-prepare-agent</id>
@@ -305,6 +302,12 @@
     </build>
 
     <dependencies>
+        <dependency>
+            <groupId>com.formdev</groupId>
+            <artifactId>flatlaf</artifactId>
+            <version>3.7.2</version>
+        </dependency>
+
         <dependency>
             <groupId>com.thoughtworks.xstream</groupId>
             <artifactId>xstream</artifactId>

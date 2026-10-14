@@ -5,6 +5,8 @@
  */
 package de.neemann.digital.gui.state;
 
+import de.neemann.gui.GlassButtonUI;
+import de.neemann.gui.GlassLaf;
 import de.neemann.gui.ToolTipAction;
 
 import javax.swing.*;
@@ -37,7 +39,7 @@ public class State implements StateInterface {
      */
     public <C extends JComponent> C setIndicator(C indicator) {
         this.indicator = indicator;
-        indicator.setBorder(DISABLED_BORDER);
+        showActive(false);
         return indicator;
     }
 
@@ -50,14 +52,22 @@ public class State implements StateInterface {
      */
     public void enter() {
         stateManager.leaveActualStateAndSet(this);
-        if (indicator != null)
-            indicator.setBorder(ENABLED_BORDER);
+        showActive(true);
     }
 
     @Override
     public void leave() {
-        if (indicator != null)
-            indicator.setBorder(DISABLED_BORDER);
+        showActive(false);
+    }
+
+    private void showActive(boolean active) {
+        if (indicator == null)
+            return;
+        if (GlassLaf.isActive()) {
+            indicator.putClientProperty(GlassButtonUI.ACTIVE, active);
+            indicator.repaint();
+        } else
+            indicator.setBorder(active ? ENABLED_BORDER : DISABLED_BORDER);
     }
 
     /**

@@ -85,19 +85,21 @@ public final class Screen {
             scaling = ((float) s) / size;
             size = s;
             font = font.deriveFont((float) s);
-            for (Object key : javax.swing.UIManager.getLookAndFeel().getDefaults().keySet()) {
-                if (key.toString().endsWith(".font"))
-                    javax.swing.UIManager.put(key, font);
+            if (!GlassLaf.isActive()) { // the glass theme scales itself via flatlaf.uiScale
+                for (Object key : javax.swing.UIManager.getLookAndFeel().getDefaults().keySet()) {
+                    if (key.toString().endsWith(".font"))
+                        javax.swing.UIManager.put(key, font);
 
-                if (!IS_MAC) { // macOS has its own icon handling
-                    if (key.toString().endsWith(".icon") || key.toString().endsWith("Icon")) {
-                        Icon icon = UIManager.getIcon(key);
-                        if (icon != null)
-                            javax.swing.UIManager.put(key, new ScaleIcon(icon, scaling));
+                    if (!IS_MAC) { // macOS has its own icon handling
+                        if (key.toString().endsWith(".icon") || key.toString().endsWith("Icon")) {
+                            Icon icon = UIManager.getIcon(key);
+                            if (icon != null)
+                                javax.swing.UIManager.put(key, new ScaleIcon(icon, scaling));
+                        }
                     }
                 }
+                UIManager.put("ScrollBar.width", size * 17 / 12);
             }
-            UIManager.put("ScrollBar.width", size * 17 / 12);
         }
         this.scaling = scaling;
         this.size = size;

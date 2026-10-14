@@ -113,7 +113,7 @@ public class PolarityAwareLEDShape implements Shape {
             Vector rad = new Vector(RAD, RAD);
 
             graphic.drawLine(new Vector(0, SIZE * 4 - SIZE2 - HEIGHT), new Vector(0, 0), Style.NORMAL);
-            graphic.drawCircle(center.sub(rad), center.add(rad), Style.FILLED);
+            graphic.drawCircle(center.sub(rad), center.add(rad), Style.ledBody());
 
             boolean aActive = a.getBool() && !a.isHighZ();
             boolean cActive = !c.getBool() && !c.isHighZ();

@@ -95,6 +95,10 @@ public final class Style {
      */
     public static final Style FILLED = new Builder().setFilled(true).build();
     /**
+     * The body of a dark LED on a dark background
+     */
+    private static final Style LED_BODY_DARK = new Builder().setFilled(true).setColor(ColorKey.DISABLED).build();
+    /**
      * Used to draw the grid in the graph
      */
     public static final Style DASH = new Builder()
@@ -183,6 +187,16 @@ public final class Style {
      */
     boolean isFilled() {
         return filled;
+    }
+
+    /**
+     * The style of the body of a dark LED. On a dark background a filled body in the
+     * main color would look lit, so it is drawn in the disabled color instead.
+     *
+     * @return the style of the body of a dark LED
+     */
+    public static Style ledBody() {
+        return ColorScheme.getSelected().isDark() ? LED_BODY_DARK : FILLED;
     }
 
     /**

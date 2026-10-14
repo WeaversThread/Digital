@@ -922,7 +922,7 @@ public class CircuitComponent extends JComponent implements ChangedListener, Lib
                 drawGrid(gr2);
 
             if (presentationMode) {
-                gr2.setColor(Color.LIGHT_GRAY);
+                gr2.setColor(GlassLaf.isActive() ? Glass.TERTIARY : Color.LIGHT_GRAY);
                 gr2.drawString(Lang.get("menu_presentationMode"), 4, getHeight() - 4);
             }
 

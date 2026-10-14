@@ -1712,6 +1712,7 @@ Sind evtl. die Namen der Variablen nicht eindeutig?</string>
 
     <string name="key_colorScheme">Farbschema</string>
     <string name="key_colorScheme_DEFAULT">Normal</string>
+    <string name="key_colorScheme_GLASS">Glass</string>
     <string name="key_colorScheme_DARK">Dunkel</string>
     <string name="key_colorScheme_COLOR_BLIND">Rot-Grün-Sehschwäche</string>
     <string name="key_colorScheme_CUSTOM">Benutzerdefiniert</string>

@@ -76,7 +76,7 @@ public class LEDShape implements Shape {
         Vector radL = new Vector(size, size);
 
         Vector center = new Vector(1 + size, 0);
-        graphic.drawCircle(center.sub(radL), center.add(radL), Style.FILLED);
+        graphic.drawCircle(center.sub(radL), center.add(radL), Style.ledBody());
         if (fill)
             graphic.drawCircle(center.sub(rad), center.add(rad), onStyle);
         Vector textPos = new Vector(2 * size + OUT_SIZE, 0);

@@ -103,6 +103,9 @@ public final class Main extends JFrame implements ClosingWindowListener.ConfirmS
     }
 
     private static final String MESSAGE = Lang.get("message");
+    private static final long STARTUP_REUSE_MS = 10000;
+    private static Main startupWindow;
+    private static long startupTime;
     private static final Icon ICON_RUN = IconCreator.create("media-playback-start.png");
     private static final Icon ICON_MICRO = IconCreator.create("media-playback-start-2.png");
     private static final Icon ICON_TEST = IconCreator.create("media-playback-start-T.png");
@@ -127,6 +130,7 @@ public final class Main extends JFrame implements ClosingWindowListener.ConfirmS
     private final ElementLibrary library;
     private final ShapeFactory shapeFactory;
     private final JLabel statusLabel;
+    private final JLabel fileLabel = GlassLaf.isActive() ? new JLabel(Lang.get("digital")) : null;
     private final StateManager stateManager = new StateManager();
     private final ScheduledThreadPoolExecutor timerExecutor = new ScheduledThreadPoolExecutor(1);
     private final WindowPosManager windowPosManager;
@@ -212,13 +216,29 @@ public final class Main extends JFrame implements ClosingWindowListener.ConfirmS
         circuitComponent.addKeyListener(new ModelKeyListener());
 
         statusLabel = new JLabel(" ");
-        statusLabel.setBorder(BorderFactory.createEmptyBorder(0, Screen.getInstance().getFontSize() * 2 / 3, 0, 0));
-        getContentPane().add(statusLabel, BorderLayout.SOUTH);
+        if (GlassLaf.isActive()) {
+            for (JLabel l : new JLabel[]{fileLabel, statusLabel}) {
+                l.setForeground(Glass.QUATERNARY);
+                l.setFont(l.getFont().deriveFont(11f));
+            }
+            JPanel statusRow = new JPanel(new BorderLayout());
+            statusRow.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(1, 0, 0, 0, Glass.SURFACE),
+                    BorderFactory.createEmptyBorder(4, 14, 5, 14)));
+            statusRow.add(fileLabel, BorderLayout.WEST);
+            statusRow.add(statusLabel, BorderLayout.EAST);
+            getContentPane().add(statusRow, BorderLayout.SOUTH);
+        } else {
+            statusLabel.setBorder(BorderFactory.createEmptyBorder(0, Screen.getInstance().getFontSize() * 2 / 3, 0, 0));
+            getContentPane().add(statusLabel, BorderLayout.SOUTH);
+        }
 
         setupStates();
 
         JMenuBar menuBar = new JMenuBar();
         JToolBar toolBar = new JToolBar();
+        if (GlassLaf.isActive())
+            makeTitleRow(toolBar);
 
         save = createFileMenu(menuBar, toolBar, builder.allowAllFileActions);
         toolBar.addSeparator();
@@ -476,6 +496,27 @@ public final class Main extends JFrame implements ClosingWindowListener.ConfirmS
         view.add(tutorial.createJMenuItem());
         view.addSeparator();
         view.add(viewHelp.createJMenuItem());
+    }
+
+    /**
+     * Turns the tool bar into the title row of the window: the content reaches into the
+     * transparent title bar and the traffic lights sit inline, left of the tools.
+     */
+    private void makeTitleRow(JToolBar toolBar) {
+        toolBar.setFloatable(false);
+        toolBar.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, Glass.SURFACE),
+                BorderFactory.createEmptyBorder(0, 8, 3, 8)));
+        if (Screen.isMac()) {
+            JRootPane rp = getRootPane();
+            rp.putClientProperty("apple.awt.fullWindowContent", true);
+            rp.putClientProperty("apple.awt.transparentTitleBar", true);
+            rp.putClientProperty("apple.awt.windowTitleVisible", false);
+            JPanel buttons = new JPanel();
+            buttons.setOpaque(false);
+            buttons.putClientProperty(com.formdev.flatlaf.FlatClientProperties.FULL_WINDOW_CONTENT_BUTTONS_PLACEHOLDER, "mac");
+            toolBar.add(buttons);
+        }
     }
 
     private JComponent createTreeComponent() {
@@ -1736,6 +1777,11 @@ public final class Main extends JFrame implements ClosingWindowListener.ConfirmS
         } else {
             setTitle(prefix + Lang.get("digital"));
         }
+        if (fileLabel != null) {
+            String name = filename == null ? Lang.get("digital") : filename.getName();
+            fileLabel.setText(modifiedPrefixVisible ? name + "  •" : name);
+            fileLabel.setToolTipText(filename == null ? null : filename.getPath());
+        }
     }
 
     /**
@@ -2169,10 +2215,12 @@ public final class Main extends JFrame implements ClosingWindowListener.ConfirmS
         Also, the HTML rendering does not seem to be supported. See GitHub #190.
         Therefore also on MosOS the MetalLookAndFeel is used.
          */
-        try { // enforce MetalLookAndFeel
-            UIManager.setLookAndFeel("javax.swing.plaf.metal.MetalLookAndFeel");
-        } catch (ClassNotFoundException | InstantiationException | UnsupportedLookAndFeelException | IllegalAccessException e) {
-            e.printStackTrace();
+        if (!GlassLaf.isActive()) {
+            try { // enforce MetalLookAndFeel
+                UIManager.setLookAndFeel("javax.swing.plaf.metal.MetalLookAndFeel");
+            } catch (ClassNotFoundException | InstantiationException | UnsupportedLookAndFeelException | IllegalAccessException e) {
+                e.printStackTrace();
+            }
         }
         ToolTipManager.sharedInstance().setDismissDelay(10000);
         URL.setURLStreamHandlerFactory(ElementHelpDialog.createURLStreamHandlerFactory());
@@ -2208,6 +2256,8 @@ public final class Main extends JFrame implements ClosingWindowListener.ConfirmS
                 }
 
                 Main main = builder.build();
+                startupWindow = main;
+                startupTime = System.currentTimeMillis();
                 if (Settings.getInstance().get(Keys.SETTINGS_OPEN_REMOTE_PORT)) {
                     final int port = Settings.getInstance().get(Keys.SETTINGS_REMOTE_PORT);
                     LOGGER.info("open remote port " + port);
@@ -2227,6 +2277,40 @@ public final class Main extends JFrame implements ClosingWindowListener.ConfirmS
                 CheckForNewRelease.showReleaseDialog(main);
             });
         }
+    }
+
+    /**
+     * Opens a file handed over by the operating system, e.g. by a double click in the Finder.
+     * If the window created at startup is still untouched, the file replaces its content,
+     * otherwise a new window is opened.
+     *
+     * @param file the file to open
+     */
+    public static void openFromSystem(File file) {
+        String name = file.getName().toLowerCase();
+        if (name.endsWith(".fsm")) {
+            FSMFrame.openFile(file);
+        } else if (name.endsWith(".tru")) {
+            TableDialog.openFile(file);
+        } else {
+            Main fresh = startupWindow;
+            startupWindow = null;
+            if (fresh != null && fresh.isDisplayable() && !fresh.isStateChanged()
+                    && System.currentTimeMillis() - startupTime < STARTUP_REUSE_MS) {
+                fresh.loadFile(file, true, true);
+                fresh.toFront();
+            } else
+                new MainBuilder().setMainFrame().setFileToOpen(file).build().setVisible(true);
+        }
+    }
+
+    /**
+     * Shows the about dialog
+     *
+     * @param parent the parent window, maybe null
+     */
+    public static void showAbout(Window parent) {
+        InfoDialog.getInstance().show(parent, MESSAGE);
     }
 
     private static void setMacCopyPasteTo(Object obj) {

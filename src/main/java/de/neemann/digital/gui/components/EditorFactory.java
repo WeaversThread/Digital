@@ -568,8 +568,10 @@ public final class EditorFactory {
             }) {
                 @Override
                 protected void paintComponent(Graphics graphics) {
-                    graphics.setColor(Color.WHITE);
-                    graphics.fillRect(0, 0, getWidth(), getHeight());
+                    if (!GlassLaf.isActive()) {
+                        graphics.setColor(Color.WHITE);
+                        graphics.fillRect(0, 0, getWidth(), getHeight());
+                    }
                     super.paintComponent(graphics);
                 }
             };

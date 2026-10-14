@@ -145,6 +145,7 @@ public class ErrorMessage implements Runnable {
             } else {
                 JEditorPane ta = new JEditorPane("text/html", message);
                 ta.setBackground(getBackground());
+                ta.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, true);
                 border = ta.getFont().getSize();
                 final JScrollPane scrollPane = new JScrollPane(ta);
                 getContentPane().add(scrollPane);

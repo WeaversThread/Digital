@@ -7,7 +7,9 @@ package de.neemann.digital.draw.graphics;
 
 import de.neemann.digital.core.element.ElementAttributes;
 import de.neemann.digital.core.element.Key;
+import de.neemann.digital.core.element.Keys;
 import de.neemann.digital.gui.Settings;
+import de.neemann.gui.Glass;
 
 import java.awt.*;
 import java.util.Arrays;
@@ -44,6 +46,29 @@ public final class ColorScheme {
             .set(ColorKey.DISABLED, new Color(40, 40, 40))
             .build();
 
+    private static final ColorScheme GLASS_SCHEME = new Builder(DEFAULT_SCHEME)
+            .set(ColorKey.BACKGROUND, Glass.BASE)
+            .set(ColorKey.GRID, Glass.white(0.1f))
+            .set(ColorKey.MAIN, Glass.PRIMARY)
+            .set(ColorKey.DISABLED, Glass.MUTED)
+            .set(ColorKey.WIRE, Glass.white(0.55f))
+            .set(ColorKey.WIRE_HIGH, Glass.ORANGE)
+            .set(ColorKey.WIRE_LOW, Glass.white(0.3f))
+            .set(ColorKey.WIRE_Z, Glass.white(0.15f))
+            .set(ColorKey.WIRE_VALUE, Glass.SECONDARY)
+            .set(ColorKey.WIRE_OUT, Glass.PRIMARY)
+            .set(ColorKey.PINS, Glass.TERTIARY)
+            .set(ColorKey.HIGHLIGHT, Glass.BLUE)
+            .set(ColorKey.ERROR, Glass.RED)
+            .set(ColorKey.PASSED, Glass.tint(Glass.GREEN, 0.8f))
+            .set(ColorKey.TESTCASE, Glass.SURFACE_DIM)
+            .set(ColorKey.ASYNC, Glass.tint(Glass.RED, 0.15f))
+            .build();
+
+    private static final Color DARK_FILL = Glass.SURFACE_DIM;
+    private static final float DARK_FILL_TINT = 0.22f;
+    private static final int DARK_INK_SUM = 3 * 96;
+
     private static final ColorScheme COLOR_BLIND_SCHEME = new Builder(DEFAULT_SCHEME)
             .set(ColorKey.WIRE, new Color(0, 0, 255))
             .set(ColorKey.WIRE_HIGH, new Color(98, 255, 41))
@@ -69,6 +94,10 @@ public final class ColorScheme {
          * the normal, default color scheme
          */
         DEFAULT(DEFAULT_SCHEME),
+        /**
+         * The glass color scheme: white on dark glass, high signals in Braun orange
+         */
+        GLASS(GLASS_SCHEME),
         /**
          * The dark color scheme
          */
@@ -126,7 +155,7 @@ public final class ColorScheme {
      * The key used to select the color map
      */
     public static final Key<ColorSchemes> COLOR_SCHEME =
-            new Key.KeyEnum<>("colorScheme", ColorSchemes.DEFAULT, ColorSchemes.values())
+            new Key.KeyEnum<>("colorScheme", ColorSchemes.GLASS, ColorSchemes.values())
                     .setRequiresRepaint();
     /**
      * The key used to define the custom color map
@@ -153,6 +182,84 @@ public final class ColorScheme {
         instance = Settings.getInstance().get(COLOR_SCHEME).getScheme();
     }
 
+    /**
+     * Maps the fill color of a component body to the selected scheme. On a dark background
+     * the pale yellow default fill of custom components becomes a faint white, other fills
+     * keep their hue but are dimmed so the white outlines and labels stay readable.
+     *
+     * @param color the fill color, maybe null
+     * @return the color to use
+     */
+    public static Color mapFill(Color color) {
+        if (color == null || !getSelected().isDark())
+            return color;
+        if (color.equals(Keys.BACKGROUND_COLOR.getDefault()))
+            return DARK_FILL;
+        return Glass.tint(color, DARK_FILL_TINT);
+    }
+
+    /**
+     * Maps a line or text color of a custom shape to the selected scheme. Dark ink,
+     * as drawn on white paper, becomes the main color on a dark background.
+     *
+     * @param color the color
+     * @return the color to use
+     */
+    public static Color mapInk(Color color) {
+        if (color == null || !getSelected().isDark())
+            return color;
+        if (color.getRed() + color.getGreen() + color.getBlue() < DARK_INK_SUM)
+            return getSelected().getColor(ColorKey.MAIN);
+        return color;
+    }
+
+    /**
+     * Maps a color of a custom shape element to the selected scheme.
+     *
+     * @param color  the color
+     * @param filled true if the element is filled
+     * @return the color to use
+     */
+    public static Color mapShape(Color color, boolean filled) {
+        return filled ? mapFill(color) : mapInk(color);
+    }
+
+    /**
+     * Runs the given task with the default color scheme if the glass scheme is selected.
+     * Used by exports, which end up on paper.
+     *
+     * @param task the task
+     * @param <E>  the exception thrown by the task
+     * @throws E the exception thrown by the task
+     */
+    public static <E extends Exception> void runWithPaperScheme(PaperTask<E> task) throws E {
+        ColorScheme selected = getSelected();
+        if (selected != GLASS_SCHEME) {
+            task.run();
+            return;
+        }
+        instance = DEFAULT_SCHEME;
+        try {
+            task.run();
+        } finally {
+            instance = selected;
+        }
+    }
+
+    /**
+     * A task run with the paper color scheme
+     *
+     * @param <E> the exception thrown
+     */
+    public interface PaperTask<E extends Exception> {
+        /**
+         * Runs the task
+         *
+         * @throws E the exception thrown
+         */
+        void run() throws E;
+    }
+
     private final Color[] colors;
 
     private ColorScheme(Builder builder) {
@@ -167,6 +274,14 @@ public final class ColorScheme {
      */
     public Color getColor(ColorKey key) {
         return colors[key.ordinal()];
+    }
+
+    /**
+     * @return true if this scheme draws on a dark background
+     */
+    public boolean isDark() {
+        Color bg = getColor(ColorKey.BACKGROUND);
+        return bg.getRed() + bg.getGreen() + bg.getBlue() < 3 * 128;
     }
 
 

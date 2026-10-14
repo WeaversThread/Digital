@@ -5,6 +5,8 @@
  */
 package de.neemann.digital.gui.components.testing;
 
+import de.neemann.gui.Glass;
+import de.neemann.gui.GlassLaf;
 import de.neemann.digital.draw.library.ElementLibrary;
 import de.neemann.digital.draw.shapes.ShapeFactory;
 import de.neemann.digital.gui.Main;
@@ -181,7 +183,7 @@ public class TestAllDialog extends JDialog {
                 Color color;
                 switch (f.getStatus()) {
                     case error:
-                        color = Color.LIGHT_GRAY;
+                        color = GlassLaf.isActive() ? Glass.SURFACE : Color.LIGHT_GRAY;
                         break;
                     case passed:
                         color = ValueTableDialog.PASSED_COLOR;
@@ -190,11 +192,11 @@ public class TestAllDialog extends JDialog {
                         color = ValueTableDialog.FAILED_COLOR;
                         break;
                     default:
-                        color = Color.WHITE;
+                        color = ValueTableDialog.NORMAL_COLOR;
                         break;
                 }
                 if (sel)
-                    color = color.darker();
+                    color = GlassLaf.isActive() ? color.brighter() : color.darker();
                 tc.setBackground(color);
                 tc.setText(f.getMessage());
             }

@@ -163,6 +163,16 @@ public final class InfoDialog implements Iterable<InfoDialog.Manifest> {
         });
     }
 
+    /**
+     * Shows the about dialog
+     *
+     * @param parent  the parent window
+     * @param message the message
+     */
+    public void show(Window parent, String message) {
+        showInfo(parent, createMessage(message), revision);
+    }
+
     @Override
     public Iterator<Manifest> iterator() {
         return infos.iterator();

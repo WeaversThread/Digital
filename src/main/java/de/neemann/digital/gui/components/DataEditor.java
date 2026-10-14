@@ -5,6 +5,8 @@
  */
 package de.neemann.digital.gui.components;
 
+import de.neemann.gui.GlassLaf;
+import de.neemann.gui.Glass;
 import de.neemann.digital.core.*;
 import de.neemann.digital.core.memory.DataField;
 import de.neemann.digital.core.memory.importer.Importer;
@@ -37,7 +39,7 @@ import java.util.StringTokenizer;
  * Looks like a HEX editor.
  */
 public class DataEditor extends JDialog {
-    private static final Color MYGRAY = new Color(230, 230, 230);
+    private static final Color MYGRAY = GlassLaf.isActive() ? Glass.SURFACE_DIM : new Color(230, 230, 230);
     private static File lastUsedFileName;
     private final ValueFormatter addrFormat;
     private final ValueFormatter dataFormat;
@@ -274,7 +276,7 @@ public class DataEditor extends JDialog {
      * Called if dialog shows data from running model and model had stopped.
      */
     public void detachFromRunningModel() {
-        table.setForeground(Color.BLUE);
+        table.setForeground(GlassLaf.isActive() ? Glass.QUATERNARY : Color.BLUE);
         table.setToolTipText(Lang.get("msg_dataNotUpdatedAnymore"));
         table.setEnabled(false);
     }

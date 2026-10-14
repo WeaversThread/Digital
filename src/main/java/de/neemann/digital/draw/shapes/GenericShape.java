@@ -212,7 +212,7 @@ public class GenericShape implements Shape {
                 .add(1, yBottom);
 
         if (color != Color.WHITE)
-            graphic.drawPolygon(polygon, Style.NORMAL.deriveFillStyle(color));
+            graphic.drawPolygon(polygon, Style.NORMAL.deriveFillStyle(ColorScheme.mapFill(color)));
         graphic.drawPolygon(polygon, Style.NORMAL);
 
         if (invert) {

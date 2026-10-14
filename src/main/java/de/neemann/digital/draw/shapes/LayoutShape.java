@@ -145,7 +145,7 @@ public class LayoutShape implements Shape {
                 .add(width * SIZE, 0)
                 .add(width * SIZE, height * SIZE)
                 .add(0, height * SIZE);
-        graphic.drawPolygon(poly, Style.NORMAL.deriveFillStyle(color));
+        graphic.drawPolygon(poly, Style.NORMAL.deriveFillStyle(ColorScheme.mapFill(color)));
         graphic.drawPolygon(poly, Style.NORMAL);
 
         if (bottom.size() == 0)

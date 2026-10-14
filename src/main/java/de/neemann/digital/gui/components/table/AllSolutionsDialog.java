@@ -5,6 +5,8 @@
  */
 package de.neemann.digital.gui.components.table;
 
+import de.neemann.gui.GlassLaf;
+import de.neemann.gui.Glass;
 import de.neemann.digital.analyse.expression.Expression;
 import de.neemann.digital.lang.Lang;
 import de.neemann.gui.Screen;
@@ -39,7 +41,11 @@ public class AllSolutionsDialog extends JDialog {
         expressionComponent = new ExpressionComponent();
         expressionComponent.setPreferredSize(Screen.getInstance().scale(new Dimension(600, 300)));
         expressionComponent.setFont(font);
-        expressionComponent.setBackground(Color.WHITE);
+        if (GlassLaf.isActive()) {
+            expressionComponent.setBackground(Glass.BASE);
+            expressionComponent.setForeground(Glass.PRIMARY);
+        } else
+            expressionComponent.setBackground(Color.WHITE);
 
         final JScrollPane scrollPane = new JScrollPane(expressionComponent);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);

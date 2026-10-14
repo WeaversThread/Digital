@@ -32,6 +32,11 @@ public final class IconCreator {
      * @return the icon
      */
     public static Icon create(String name) {
+        if (GlassLaf.isActive()) {
+            Icon glass = GlassIcons.get(name);
+            if (glass != null)
+                return glass;
+        }
         return new ImageIcon(createImage(name));
     }
 
